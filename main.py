@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 from pytubefix import YouTube
-import base64, requests, os, time, random
+import base64, requests, os, time, random, datetime
 
 
 def get_spotify_access_token(client_id, client_secret):
@@ -129,37 +129,6 @@ def download_youtube_audio(url, file_number, output_path='assets'):
     except Exception as e:
         print(f"오류 발생: {str(e)}")
 
-client_id = "2028ab41c830455d9add09c86804d830"
-client_secret = "8c049cc951ee467f92fc103ab94de616"
-
-chart_data = get_melon_chart_with_spotify_covers(client_id, client_secret)
-
-# 결과를 메모장 파일로 저장 (덮어쓰기)
-filename = "melon.txt"
-if os.path.exists(filename):
-    print(f"'{filename}' 파일이 이미 존재합니다. 덮어쓰기를 진행합니다.")
-save_to_file(filename, chart_data)
-
-# melon.txt 파일 읽기 및 melon_links.txt 파일 생성
-with open('melon.txt', 'r', encoding='utf-8') as f_in, open('melon_links.txt', 'w', encoding='utf-8') as f_out:
-    for line in f_in:
-        parts = line.strip().split('^')
-        if len(parts) >= 2:
-            title, artist = parts[0], parts[1]
-            link = get_youtube_link(title, artist)
-            if link:
-                f_out.write(f"{link}\n")
-
-            # 요청 간 딜레이 추가
-            time.sleep(random.uniform(1, 3))
-
-# melon_links.txt 파일 읽기 및 mp3 다운로드
-with open('melon_links.txt', 'r', encoding='utf-8') as f:
-    for i, line in enumerate(f, 1):
-        url = line.strip()
-        if url:  # 빈 줄이 아닐 경우에만 다운로드
-            download_youtube_audio(url, file_number=i)
-
 def read_songs_from_file(filename="melon.txt"):
     songs = []
     try:
@@ -174,15 +143,20 @@ def read_songs_from_file(filename="melon.txt"):
                         "cover": cover,
                         "artist": artist
                     })
-                    print(f"곡 추가됨: {displayName} - {artist}")  # 성공적으로 추가된 곡 로그
+                    print(f"곡 추가됨: {displayName} - {artist}")
                 else:
-                    print(f"잘못된 형식의 줄 발견 (라인 {index}): {line.strip()}")  # 잘못된 형식 로그
+                    print(f"잘못된 형식의 줄 발견 (라인 {index}): {line.strip()}")
     except FileNotFoundError:
         print(f"파일을 찾을 수 없습니다: {filename}")
     return songs
 
+
 def generate_js_code(songs):
-    js_code = "const songs = [\n"
+    now = datetime.datetime.now()
+    formatted_date = now.strftime("%Y년 %m월 %d일 %H시 %M분")
+    js_code = f"const time = '마지막 업데이트: {formatted_date}';\n" 
+    js_code += 'document.getElementById("time").innerHTML = time;\n'
+    js_code += "const songs = [\n"
     for song in songs:
         js_code += f"""    {{
         path: '{song["path"]}',
@@ -193,6 +167,37 @@ def generate_js_code(songs):
     js_code += "];"
     return js_code
 
+client_id = "2028ab41c830455d9add09c86804d830"
+client_secret = "8c049cc951ee467f92fc103ab94de616"
+
+chart_data = get_melon_chart_with_spotify_covers(client_id, client_secret)
+
+## 결과를 메모장 파일로 저장 (덮어쓰기)
+#filename = "melon.txt"
+#if os.path.exists(filename):
+#    print(f"'{filename}' 파일이 이미 존재합니다. 덮어쓰기를 진행합니다.")
+#save_to_file(filename, chart_data)
+
+## melon.txt 파일 읽기 및 melon_links.txt 파일 생성
+#with open('melon.txt', 'r', encoding='utf-8') as f_in, open('melon_links.txt', 'w', encoding='utf-8') as f_out:
+#    for line in f_in:
+#        parts = line.strip().split('^')
+#        if len(parts) >= 2:
+#            title, artist = parts[0], parts[1]
+#            link = get_youtube_link(title, artist)
+#            if link:
+#                f_out.write(f"{link}\n")
+#
+#            # 요청 간 딜레이 추가
+#            time.sleep(random.uniform(1, 3))
+
+## melon_links.txt 파일 읽기 및 mp3 다운로드
+#with open('melon_links.txt', 'r', encoding='utf-8') as f:
+#    for i, line in enumerate(f, 1):
+#        url = line.strip()
+#        if url:  # 빈 줄이 아닐 경우에만 다운로드
+#            download_youtube_audio(url, file_number=i)
+
 songs = read_songs_from_file()
 js_code = generate_js_code(songs)
 
@@ -200,3 +205,4 @@ with open("songs_data.js", "w", encoding="utf-8") as js_file:
     js_file.write(js_code)
 
 print("songs_data.js 파일이 생성되었습니다.")
+

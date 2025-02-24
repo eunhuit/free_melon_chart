@@ -62,7 +62,14 @@ function pauseMusic() {
   music.onerror = function() {
   console.error("Failed to load audio source: " + music.src);
   };
-  highlightCurrentSong(); // 재생 목록에서 현재 재생 중인 노래 강조 표시
+  highlightCurrentSong();
+  document.title = songs[musicIndex].artist + " - " +  songs[musicIndex].displayName;
+  const faviconLink = document.getElementById('favicon');
+  if (songs[musicIndex].cover === 'None') {
+    faviconLink.href = defaultCover;
+} else {
+    faviconLink.href = songs[musicIndex].cover;
+}
  }
 
 
